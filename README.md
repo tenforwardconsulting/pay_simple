@@ -18,7 +18,24 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+Set up your API Key and username: 
+
+    PaySimple.api_key = "VeryLongSharedSecretStringGoesHere"
+    PaySimple.api_user = "ApiUser1234"
+
+Creat a customer
+
+    customer = PaySimple::Customer.new
+    customer.first_name = "Test"
+    customer.last_name = "Customer"
+    customer.shipping_same_as_billing = true
+    customer.billing_address = PaySimple::Address.new
+    customer.billing_address.street_address1 = "123 Fake Street"
+    customer.billing_address.city = "Madison"
+    customer.billing_address.state_code = "WI"
+
+    client = PaySimple::Client.new
+    client.create(customer)
 
 ## Contributing
 

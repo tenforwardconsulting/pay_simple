@@ -35,18 +35,43 @@ module PaySimple
     end
 
     def create(simple_object)
-      endpoint = simple_object.class.name.split("::").last.downcase
-      parse_response(self.class.post "/#{VERSION}/#{endpoint}", headers: authentication_headers, body: simple_object.to_json)
+      options = {
+        headers: authentication_headers,
+        body: simple_object.to_json
+      }
+      response = parse_response(self.class.post simple_object_endpoint(simple_object), options)
+      if (self.error?)
+        false
+      else
+        simple_object.hydrate(response)
+      end
+    end
+
+    def fetch(simple_object)
+      options = {
+        headers: authentication_headers
+      }
+      response = parse_response(self.class.get simple_object_endpoint(simple_object) + "/#{simple_object.id}", options)
+      if (self.error?)
+        false
+      else
+        simple_object.hydrate(response)
+      end
     end
 
     def parse_response(response)
       json = JSON.parse(response.body)
       @errors = json['Meta']['Errors']
-      if @errors.ni?
+      if @errors.nil?
         json['Response']
       else
         false
       end
+    end
+
+    def simple_object_endpoint(simple_object)
+      endpoint = simple_object.class.name.split("::")[1..-1].join('/').downcase
+      "/#{VERSION}/#{endpoint}"
     end
   end
 end
