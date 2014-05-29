@@ -3,6 +3,7 @@ require "pay_simple/client"
 require "pay_simple/simple_object"
 require "pay_simple/customer"
 require "pay_simple/address"
+require "pay_simple/payment"
 require "pay_simple/account/ach"
 
 module PaySimple

@@ -29,10 +29,19 @@ describe PaySimple::Client do
     c = client.create(customer)
   end
 
-  it "parses response data to json" do 
-    client = PaySimple::Client.new
-    client.parse_response(failure_response)
-    expect(client.error?).to be_true
+  context "Parsing response data" do
+    let(:client) {client = PaySimple::Client.new}
+    before do 
+      client.parse_response(failure_response)
+    end  
+
+    it "parses response data to json" do 
+      expect(client.error?).to be_true
+    end
+
+    it "parses error messages" do 
+      expect(client.error_messages).to eq "UnexpectedError: Route 'customer.json' does not exist"
+    end
   end
 
   it "returns a hydrated object" do 
@@ -41,7 +50,6 @@ describe PaySimple::Client do
     expect(PaySimple::Client).to receive(:post).and_return success_response
     c = client.create(customer)
     expect(customer.email).to eq "test@example.com"
-
   end
 
   it "posts to the correct url for objects in a module" do 
@@ -49,7 +57,7 @@ describe PaySimple::Client do
 
     client = PaySimple::Client.new
     expect(PaySimple::Client).to receive(:post).with("/v4/account/ach", kind_of(Hash)).and_return failure_response
-    client.create(ach)
+    expect{client.create(ach)}.to raise_error
   end
   
 end

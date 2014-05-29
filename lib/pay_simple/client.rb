@@ -29,6 +29,11 @@ module PaySimple
       !!@errors
     end
 
+    def error_messages
+      message = @errors['ErrorCode'] + ": "
+      message += @errors['ErrorMessages'].collect {|x| x['Message']}.join("; ")
+    end
+
     def do_request(url)
       response = self.class.get "/#{VERSION}/#{url}", headers: authentication_headers
       puts response.body
@@ -40,10 +45,10 @@ module PaySimple
         body: simple_object.to_json
       }
       response = parse_response(self.class.post simple_object_endpoint(simple_object), options)
-      if (self.error?)
-        false
-      else
+      if (response)
         simple_object.hydrate(response)
+      else
+        raise "Could not create #{simple_object}"
       end
     end
 
@@ -52,10 +57,30 @@ module PaySimple
         headers: authentication_headers
       }
       response = parse_response(self.class.get simple_object_endpoint(simple_object) + "/#{simple_object.id}", options)
-      if (self.error?)
-        false
-      else
+      if (response)
         simple_object.hydrate(response)
+      else
+        nil
+      end
+    end
+
+    def fetch_association(simple_object, association)
+      options = {
+        headers: authentication_headers
+      }
+      association_info = simple_object.class.associations[association]
+      endpoint = association_info[:endpoint]
+      response = parse_response(self.class.get simple_object_endpoint(simple_object) + "/#{simple_object.id}/#{endpoint}", options)
+      if (response)
+        clazz = Kernel.qualified_const_get("PaySimple::#{association_info[:class_name]}")
+        if (association_info[:multiple])
+          raise "welp"
+        else
+          instance = clazz.new
+          instance.hydrate(response)
+        end
+      else
+        nil
       end
     end
 
@@ -65,7 +90,7 @@ module PaySimple
       if @errors.nil?
         json['Response']
       else
-        false
+        nil
       end
     end
 

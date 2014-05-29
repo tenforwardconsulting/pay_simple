@@ -4,8 +4,6 @@ module PaySimple
     attr_accessor *SHARED_ATTRIBUTES
 
     class << self 
-      attr_accessor :required_attributes, :optional_attributes
-
       def find(id, client=nil)
         instance = self.new
         instance.id = id
@@ -36,19 +34,66 @@ module PaySimple
       @optional_attributes
     end
 
-    def all_attributes
-      SHARED_ATTRIBUTES + self.class.required_attributes + self.class.optional_attributes
+    # options: 
+    #   class_name: "Account::Ach"
+    #   multiple: true/false
+    #   endpoint: api endpoint if different from the name
+    def self.association(name, options={})
+      @associations ||= {}
+
+      attr_accessor name
+      options[:class_name] = name.to_s.capitalize if options[:class_name].nil?
+      options[:endpoint] = name.to_s if options[:endpoint].nil?
+
+      @associations[name] = options
+      @associations
+    end
+
+    def self.associations
+      @associations ||= {}
+    end
+
+    def self.belongs_to(name, options={})
+      association(name, options)
+    end
+
+    def self.has_one(name, options={})
+      association(name, options)
+    end
+
+    def self.has_many(name, options={})
+      options[:multiple] = true
+      association(name, options)
+    end
+
+    def initialize(attributes={})
+      attributes.each do |k,v|
+        if self.respond_to? k
+          self.send("#{k}=", v)
+        end
+      end 
+    end
+
+    def serialized_attributes
+      all = self.class.required_attributes + self.class.optional_attributes
+      self.class.associations.each do |association, association_info|
+        if (association_info[:serialize])
+          all << association
+        end
+      end
+      all
     end
 
     def as_json
       attributes = {}
-      self.all_attributes.each do |attribute|
+      self.serialized_attributes.each do |attribute|
         value = self.send(attribute.to_sym)
         if (value.respond_to? :as_json)
           value = value.as_json
         end
         attributes[camel_case(attribute)] = value
       end
+
       attributes
     end
 
