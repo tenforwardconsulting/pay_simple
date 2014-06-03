@@ -48,7 +48,7 @@ module PaySimple
       if (response)
         simple_object.hydrate(response)
       else
-        raise "Could not create #{simple_object}"
+        raise "Could not create #{simple_object.class.name}: #{error_messages}"
       end
     end
 
